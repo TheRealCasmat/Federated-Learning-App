@@ -41,7 +41,7 @@ This is an app currently in development exploring the different aspects of Feder
     docker run --name fla-frontend --network fla-site --restart unless-stopped -p 5173:5173 -v ~/Federated-Learning-App/frontend/public:/frontend/public -v ~/Federated-Learning-App/frontend/src:/frontend/src -v ~/Federated-Learning-App/frontend/index.html:/frontend/index.html -d fla-frontend:latest
     ```
 
-10. Build the backend image ***NOTE: THIS MAY TAKE A WHILE TO BUILD DEPENDING ON THE SYSTEM***:
+10. Build the backend image:
     ```
     docker build -f backend.Dockerfile -t fla-backend:latest .
     ```

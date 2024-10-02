@@ -23,6 +23,7 @@ function App() {
   const [showRmModel, setShowRmModel] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isRetrained, setIsRetrained] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Load the model from IndexedDB or the server
   const loadModel = async () => {
@@ -70,6 +71,9 @@ function App() {
   // Predict the image when the form is submitted
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    handleSendModel();
+    return;
 
     // Check if the user has uploaded an image
     if (files.length === 0) {
@@ -338,18 +342,45 @@ function App() {
   const handleSendModel = async () => {
     try {
       setIsSending(true);
+      setUploadProgress(0);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const weights = model.getWeights(true);
+      setUploadProgress(5);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const serializedWeights = weights.map((tensor) => tensor.arraySync());
+      setUploadProgress(10);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const weightShapes = weights.map((tensor) => tensor.shape);
+      setUploadProgress(15);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      console.log("Weights:", serializedWeights);
+      console.log("Shapes:", weightShapes);
+      const payload = {
+        weights: serializedWeights,
+        shapes: weightShapes,
+      };
+      const payloadString = JSON.stringify(payload);
+      const payloadSize = new Blob([payloadString]).size;
+      setUploadProgress(20);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      console.log("Payload size in bytes:", payloadSize);
+      if (payloadSize > 1024 * 1024)
+        console.log("Payload size in MB:", payloadSize / (1024 * 1024));
 
-      const weights = model.getWeights();
-      const weightsJson = JSON.stringify(weights);
-      const weightsArray = weights.map((w) => w.dataSync());
-      console.log(weightsArray);
-      return;
+      const data = [
+        ["item1", "item2", "item3"],
+        [10, 20, 30],
+      ];
       const response = await axios.post(
         "https://api.dhanwanth.pp.ua/update",
-        weightsJson,
+        payload,
         {
-          headers: {
-            "Content-Type": "application/json",
+          timeout: 300000,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(20 + percentCompleted * 0.8);
           },
         }
       );
@@ -506,6 +537,18 @@ function App() {
                 </button>
               )}
             </div>
+            {isSending && (
+              <div>
+                <p className="text-md text-slate-300 mb-4">
+                  <b>Sending model to server...</b>
+                </p>
+                <progress
+                  className="progress progress-primary w-56 mb-4 [&::-webkit-progress-value]:transition-all"
+                  value={uploadProgress}
+                  max="100"
+                />
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <FileUpload
                 files={files}
